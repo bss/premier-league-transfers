@@ -60,7 +60,7 @@ d3.json("transfers.json", function (data) {
 
 function vizAll(cleanedData) {
   var matrix = generateMatrix(leagueClubs, cleanedData);
-  visualize(matrix, "All");
+  visualize(matrix, "All (player amount)");
 }
 
 function vizFiltered(cleanedData) {
@@ -69,13 +69,13 @@ function vizFiltered(cleanedData) {
   matrix.forEach(function (col) {
     col.pop();
   });
-  visualize(matrix, "Only inter-premierleague transfers");
+  visualize(matrix, "Only inter-premierleague transfers (player amount)");
 }
 
 function vizFilteredPrice(cleanedData) {
   priceFilteredData = cleanedData.filter(function (transfer) { return transfer.price !== undefined; });
   var matrix = generateMatrix(leagueClubs, priceFilteredData, function (transfer) { return transfer.price; });
-  visualize(matrix, "By price");
+  visualize(matrix, "All (price)");
 }
 
 function cleanupData(data) {
