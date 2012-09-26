@@ -1,6 +1,15 @@
 <html>
 <head>
 	<title>Premier league transfers</title>
+  <style type="text/css">
+    .container {
+      width: 700px;
+      float: left;
+    }
+    .container h1 {
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 <div id="transfer-chart"></div>
@@ -100,9 +109,14 @@ function visualize(matrix, title) {
 
   var fill = d3.scale.category20c();
   
-  if (arguments.length === 2) d3.select("#transfer-chart").append("h1").text(title);
+  
+  var div = d3.select("#transfer-chart")
+    .append("div")
+      .classed("container", true);
 
-  var svg = d3.select("#transfer-chart")
+  if (arguments.length === 2) div.append("h1").text(title);
+
+  var svg = div
     .append("svg")
       .attr("width", width)
       .attr("height", height)
