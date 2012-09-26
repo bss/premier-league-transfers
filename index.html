@@ -2,16 +2,29 @@
 <head>
 	<title>Premier league transfers</title>
   <style type="text/css">
+    html {
+      font-family: 'Helvetica Neue', Helvetica, Calibri, Verdana;
+      font-weight: 200;
+    }
+    h1, h2 {
+      font-weight: 100;
+    }
     .container {
       width: 700px;
       float: left;
     }
-    .container h1 {
+    .container h2 {
       text-align: center;
+    }
+    text {
+      font-weight: 200;
     }
   </style>
 </head>
 <body>
+  <h1>Premier league transfers</h1>
+  <p>These visualisations show the transfers for Premier League for the season 2012/2013 (<a href="http://www.soccernews.com/soccer-transfers/english-premier-league-transfers/">Data source</a>).</p>
+  <p>Source is available at github (<a href="">@bssdk</a>).</p>
 <div id="transfer-chart"></div>
 <script type="text/javascript" src="d3.v2.min.js"></script>
 <script type="text/javascript">
@@ -114,7 +127,7 @@ function visualize(matrix, title) {
     .append("div")
       .classed("container", true);
 
-  if (arguments.length === 2) div.append("h1").text(title);
+  if (arguments.length === 2) div.append("h2").text(title);
 
   var svg = div
     .append("svg")
