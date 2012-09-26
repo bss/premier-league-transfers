@@ -6,6 +6,177 @@
 <div id="transfer-chart"></div>
 <script type="text/javascript" src="d3.v2.min.js"></script>
 <script type="text/javascript">
+/* 
+Data fetched from http://www.soccernews.com/soccer-transfers/english-premier-league-transfers/
+Using the following jQuery script run in browser.
+    var playerMap = [];
+    $('.league-transfers .panes ul').each(function (_, node) { 
+      var obj = {};
+      obj.position = $('.player span', node).text();
+      $('.player span, .player br', node).remove();
+      obj.player = $('.player', node).html();
+      obj.country = $('.country', node).text();
+      obj.from = $('.from', node).text();
+      obj.to = $('.to', node).text();
+      obj.price = $('.price', node).text();
+      playerMap.push(obj);
+    });
+    JSON.stringify(playerMap);
+*/
+
+var cleanedData,
+    leagueClubs = ["Arsenal", "Aston Villa", "Chelsea", "Wigan", "Everton", "Tottenham", "Fulham", "Manchester Utd", "Sunderland", "Liverpool", "Swansea City", "Manchester City", "Newcastle", "Norwich", "QPR", "West Ham", "Reading", "West Bromwich", "Southampton", "Stoke"];
+leagueClubs.sort();
+leagueClubs.push("Other"); // Add special case after sort
+
+d3.json("transfers.json", function (data) {
+  cleanedData = cleanupData(data);
+  vizAll(cleanedData);
+  vizFiltered(cleanedData);
+  vizFilteredPrice(cleanedData);
+});
+
+function vizAll(cleanedData) {
+  var matrix = generateMatrix(leagueClubs, cleanedData);
+  visualize(matrix);
+}
+
+function vizFiltered(cleanedData) {
+  var matrix = generateMatrix(leagueClubs, cleanedData);
+  matrix.pop();
+  matrix.forEach(function (col) {
+    col.pop();
+  });
+  visualize(matrix);
+}
+
+function vizFilteredPrice(cleanedData) {
+  priceFilteredData = cleanedData.filter(function (transfer) { return transfer.price !== undefined; });
+  var matrix = generateMatrix(leagueClubs, priceFilteredData, function (transfer) { return transfer.price; });
+  visualize(matrix);
+}
+
+function cleanupData(data) {
+  data.forEach(function (transfer) {
+    transfer.toId = leagueClubs.indexOf(transfer.to),
+    transfer.fromId = leagueClubs.indexOf(transfer.from);
+    if (transfer.toId === -1) transfer.toId = leagueClubs.indexOf("Other");
+    if (transfer.fromId === -1) transfer.fromId = leagueClubs.indexOf("Other");
+    transfer.to = leagueClubs[transfer.toId];
+    transfer.from = leagueClubs[transfer.fromId];
+    transfer.priceText = transfer.price;
+    transfer.price = parsePrice(transfer.price);
+  });
+  return data;
+}
+
+function parsePrice(priceStr) {
+  if (priceStr === "undisclosed") return undefined;
+  if (priceStr === "Free" || priceStr === "Loan") return 0;
+  if (priceStr.indexOf("million") !== -1) return parseFloat(priceStr.replace("million", ""), 10)*1000000;
+  var num = parseFloat(priceStr.replace(",", ""));
+  if (!isNaN(num)) return num;
+  return undefined;
+}
+
+function generateMatrix(clubs, data, adder) {
+  if (arguments.length == 2) adder = function () { return 1; };
+  var matrix = clubs.map(function () { return clubs.map(function () { return 0; })}); // Init matrix
+  data.forEach(function (transfer) {
+    matrix[transfer.fromId][transfer.toId] += adder(transfer);
+  });
+  return matrix;
+}
+function visualize(matrix) {
+  var chord = d3.layout.chord()
+      .padding(.05)
+      .sortSubgroups(d3.descending)
+      .matrix(matrix);
+
+  var width = 700,
+      height = 700,
+      innerRadius = Math.min(width, height) * .32,
+      outerRadius = innerRadius * 1.08;
+
+  var fill = d3.scale.category20c();
+  
+  var svg = d3.select("#transfer-chart")
+    .append("svg")
+      .attr("width", width)
+      .attr("height", height)
+    .append("g")
+      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+  svg.append("g")
+    .selectAll("path")
+      .data(chord.groups)
+    .enter().append("path")
+      .style("fill", function(d) { return fill(d.index); })
+      .style("stroke", function(d) { return fill(d.index); })
+      .attr("d", d3.svg.arc().innerRadius(innerRadius).outerRadius(outerRadius))
+      .on("mouseover", fade(.1))
+      .on("mouseout", fade(1));
+
+  var ticks = svg.append("g")
+    .selectAll("g")
+      .data(chord.groups)
+    .enter().append("g")
+    .selectAll("g")
+      .data(groupTicks)
+    .enter().append("g")
+      .attr("transform", function(d) {
+        return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
+            + "translate(" + outerRadius + ",0)";
+      });
+
+  ticks.append("line")
+      .attr("x1", 1)
+      .attr("y1", 0)
+      .attr("x2", 5)
+      .attr("y2", 0)
+      .style("stroke", "#000");
+
+  ticks.append("text")
+      .attr("x", 8)
+      .attr("dy", ".35em")
+      .attr("text-anchor", function(d) {
+        return d.angle > Math.PI ? "end" : null;
+      })
+      .attr("transform", function(d) {
+        return d.angle > Math.PI ? "rotate(180)translate(-16)" : null;
+      })
+      .text(function(d) { return d.label; });
+
+  svg.append("g")
+      .attr("class", "chord")
+    .selectAll("path")
+      .data(chord.chords)
+    .enter().append("path")
+      .style("fill", function(d) { return fill(d.target.index); })
+      .attr("d", d3.svg.chord().radius(innerRadius))
+      .style("opacity", 1);
+
+  /** Returns an array of tick angles and labels, given a group. */
+  function groupTicks(d) {
+    var mid = d.startAngle + ((d.endAngle - d.startAngle) / 2);
+    return [{
+        angle: mid,
+        label: leagueClubs[d.index]
+    }];
+  }
+
+  /** Returns an event handler for fading a given chord group. */
+  function fade(opacity) {
+    return function(g, i) {
+      svg.selectAll("g.chord path")
+          .filter(function(d) {
+            return d.source.index != i && d.target.index != i;
+          })
+        .transition()
+          .style("opacity", opacity);
+  };
+}
+}
 </script>
 </body>
 </html>
