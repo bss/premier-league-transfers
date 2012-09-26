@@ -38,7 +38,7 @@ d3.json("transfers.json", function (data) {
 
 function vizAll(cleanedData) {
   var matrix = generateMatrix(leagueClubs, cleanedData);
-  visualize(matrix);
+  visualize(matrix, "All");
 }
 
 function vizFiltered(cleanedData) {
@@ -47,13 +47,13 @@ function vizFiltered(cleanedData) {
   matrix.forEach(function (col) {
     col.pop();
   });
-  visualize(matrix);
+  visualize(matrix, "Only inter-premierleague transfers");
 }
 
 function vizFilteredPrice(cleanedData) {
   priceFilteredData = cleanedData.filter(function (transfer) { return transfer.price !== undefined; });
   var matrix = generateMatrix(leagueClubs, priceFilteredData, function (transfer) { return transfer.price; });
-  visualize(matrix);
+  visualize(matrix, "By price");
 }
 
 function cleanupData(data) {
@@ -87,7 +87,7 @@ function generateMatrix(clubs, data, adder) {
   });
   return matrix;
 }
-function visualize(matrix) {
+function visualize(matrix, title) {
   var chord = d3.layout.chord()
       .padding(.05)
       .sortSubgroups(d3.descending)
@@ -100,6 +100,8 @@ function visualize(matrix) {
 
   var fill = d3.scale.category20c();
   
+  if (arguments.length === 2) d3.select("#transfer-chart").append("h1").text(title);
+
   var svg = d3.select("#transfer-chart")
     .append("svg")
       .attr("width", width)
