@@ -53,29 +53,21 @@ leagueClubs.push("Other"); // Add special case after sort
 
 d3.json("transfers.json", function (data) {
   cleanedData = cleanupData(data);
-  vizAll(cleanedData);
-  vizFiltered(cleanedData);
-  vizFilteredPrice(cleanedData);
+  vizAll(cleanedData, "All (player amount)");
+  vizAll(cleanedData.filter(function (t) { return (t.from !== "Other" && t.to !== "Other");}), "Inter premier league (player amount)");
+  vizPrice(cleanedData, "All (price)");
+  vizPrice(cleanedData.filter(function (t) { return (t.from !== "Other" && t.to !== "Other");}), "Inter premier league (price)");
 });
 
-function vizAll(cleanedData) {
+function vizAll(cleanedData, title) {
   var matrix = generateMatrix(leagueClubs, cleanedData);
-  visualize(matrix, "All (player amount)");
+  visualize(matrix, title);
 }
 
-function vizFiltered(cleanedData) {
-  var matrix = generateMatrix(leagueClubs, cleanedData);
-  matrix.pop();
-  matrix.forEach(function (col) {
-    col.pop();
-  });
-  visualize(matrix, "Only inter-premierleague transfers (player amount)");
-}
-
-function vizFilteredPrice(cleanedData) {
+function vizPrice(cleanedData, title) {
   priceFilteredData = cleanedData.filter(function (transfer) { return transfer.price !== undefined; });
   var matrix = generateMatrix(leagueClubs, priceFilteredData, function (transfer) { return transfer.price; });
-  visualize(matrix, "All (price)");
+  visualize(matrix, title);
 }
 
 function cleanupData(data) {
